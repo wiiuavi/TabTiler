@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      width: 400px;
+      max-height: 600px;
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .customRange {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    .customRange::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      margin-top: -5px;
+    }
+    .customRange::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: #334155;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-xl font-bold tracking-tight text-sky-400">Stardance</h1>
+    <span class="text-xs font-medium px-2 py-1 bg-slate-800 rounded-md text-slate-400" id="statusBadge">Ready</span>
+  </div>
+
+  <div class="space-y-4">
+    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+      <h2 class="text-sm font-semibold mb-3 text-slate-300">Create Layout</h2>
+      <div id="tabContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1 mb-4"></div>
+      <button id="createLayoutBtn" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        Tile Selected Tabs
+      </button>
+    </div>
+
+    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hidden" id="activeLayoutsSection">
+      <h2 class="text-sm font-semibold mb-3 text-slate-300">Active Layouts</h2>
+      <div id="activeGroupsContainer" class="space-y-4"></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

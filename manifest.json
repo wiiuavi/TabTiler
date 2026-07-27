@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "TabTiler",
+  "version": "1.0.0",
+  "permissions": [
+    "tabs",
+    "windows",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
