@@ -1,32 +1,72 @@
 document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.local.get(null, (items) => {
-    const container = document.getElementById('layoutsContainer');
-    const layoutKeys = Object.keys(items).filter(k => k.startsWith('layout_'));
-    
-    if (layoutKeys.length === 0) {
-      container.innerHTML = '<div class="empty-state">No active tile layouts found in storage.</div>';
-      return;
-    }
+  const toggle = document.getElementById('keep100ZoomToggle');
+  
+  chrome.storage.local.get(['keep100Zoom'], (result) => {
+    toggle.checked = result.keep100Zoom || false;
+  });
 
-    container.innerHTML = '';
-    layoutKeys.forEach(key => {
-      const data = items[key];
-      const div = document.createElement('div');
-      div.className = 'layout-item';
-      
-      const details = document.createElement('div');
-      details.innerHTML = `<strong>${data.name}</strong> <span style="color:#94a3b8; font-size:0.85em; margin-left:8px;">(${data.urls.length} slots)</span>`;
-      
-      const cleanBtn = document.createElement('button');
-      cleanBtn.textContent = 'Delete Data';
-      cleanBtn.style.cssText = 'background: #7f1d1d; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer;';
-      cleanBtn.onclick = () => {
-        chrome.storage.local.remove(key, () => div.remove());
-      };
+  toggle.addEventListener('change', (e) => {
+    chrome.storage.local.set({ keep100Zoom: e.target.checked });
+  });
 
-      div.appendChild(details);
-      div.appendChild(cleanBtn);
-      container.appendChild(div);
+  function renderLayouts() {
+    chrome.storage.local.get(null, (items) => {
+      const container = document.getElementById('layoutsContainer');
+      const layoutKeys = Object.keys(items).filter(k => k.startsWith('layout_'));
+      
+      if (layoutKeys.length === 0) {
+        container.innerHTML = '<div class="empty-state">No saved layouts found.</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      layoutKeys.forEach(key => {
+        const data = items[key];
+        const layoutId = key.replace('layout_', '');
+        const div = document.createElement('div');
+        div.className = 'layout-item';
+        
+        const details = document.createElement('div');
+        details.innerHTML = `<strong>${data.name}</strong> <span style="color:#94a3b8; font-size:0.85em; margin-left:8px;">(${data.urls.length} slots)</span>`;
+        
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btnGroup';
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'dashActionBtn openBtn';
+        openBtn.textContent = 'Open Layout';
+        openBtn.onclick = async () => {
+          const targetUrl = chrome.runtime.getURL(`layout.html?id=${layoutId}`);
+          const tabs = await chrome.tabs.query({});
+          const existingTab = tabs.find(t => t.url && t.url === targetUrl);
+          
+          if (existingTab) {
+            chrome.tabs.update(existingTab.id, { active: true });
+          } else {
+            chrome.tabs.create({ url: targetUrl });
+          }
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'dashActionBtn deleteBtn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => {
+          chrome.storage.local.remove(key, () => renderLayouts());
+        };
+
+        btnGroup.appendChild(openBtn);
+        btnGroup.appendChild(deleteBtn);
+        div.appendChild(details);
+        div.appendChild(btnGroup);
+        container.appendChild(div);
+      });
     });
+  }
+
+  renderLayouts();
+
+  chrome.storage.onChanged.addListener((changes) => {
+    const hasLayoutChanges = Object.keys(changes).some(k => k.startsWith('layout_'));
+    if (hasLayoutChanges) renderLayouts();
   });
 });

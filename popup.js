@@ -15,14 +15,14 @@ const elements = {
 
 async function initializeApp() {
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
-  activeTabId = activeTab.id
+  activeTabId = activeTab ? activeTab.id : null
 
-  if (activeTab.url && activeTab.url.includes(chrome.runtime.id) && activeTab.url.includes('layout.html')) {
+  if (activeTab && activeTab.url && activeTab.url.includes(chrome.runtime.id) && activeTab.url.includes('layout.html')) {
     elements.manageView.classList.remove('hidden')
     fetchActiveLayoutState()
   } else {
     elements.createView.classList.remove('hidden')
-    fetchAvailableTabs()
+    await fetchAvailableTabs()
     setupCreateListeners()
   }
 }
@@ -30,6 +30,12 @@ async function initializeApp() {
 async function fetchAvailableTabs() {
   const tabs = await chrome.tabs.query({ currentWindow: true })
   availableTabs = tabs.filter(tab => !tab.url.startsWith('chrome-extension://'))
+  elements.tabContainer.innerHTML = ''
+
+  if (availableTabs.length === 0) {
+    elements.tabContainer.innerHTML = '<div style="color:#64748b; font-size:0.75rem; text-align:center; padding:12px;">No available tabs to tile.</div>'
+    return
+  }
   
   availableTabs.forEach(tab => {
     const wrapper = document.createElement('label')
@@ -99,8 +105,8 @@ function setupCreateListeners() {
       [`layout_${layoutId}`]: { name: layoutName, urls: urlsToLoad } 
     })
 
+    await chrome.tabs.create({ url: `layout.html?id=${layoutId}` })
     await chrome.tabs.remove(tabsToProcess)
-    chrome.tabs.create({ url: `layout.html?id=${layoutId}` })
   })
 }
 
@@ -114,13 +120,9 @@ function fetchActiveLayoutState() {
     response.panes.forEach((pane) => {
       const card = document.createElement('div')
       card.className = 'paneControlCard'
-      card.style.flexDirection = 'column'
-      card.style.alignItems = 'stretch'
       
       const header = document.createElement('div')
-      header.style.display = 'flex'
-      header.style.justifyContent = 'space-between'
-      header.style.alignItems = 'center'
+      header.className = 'paneHeader'
 
       const titleGroup = document.createElement('div')
       titleGroup.style.display = 'flex'
@@ -134,12 +136,12 @@ function fetchActiveLayoutState() {
       if (!pane.isEmpty) {
         const zoomSelect = document.createElement('select')
         zoomSelect.className = 'zoomSelect'
-        const zooms = [0.25, 0.5, 0.75, 1, 1.25, 1.5]
+        const zooms = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
         zooms.forEach(z => {
           const opt = document.createElement('option')
           opt.value = z
-          opt.textContent = `${z * 100}%`
-          if ((pane.zoom || 1) == z) opt.selected = true
+          opt.textContent = `${Math.round(z * 100)}%`
+          if (Math.abs((pane.zoom || 1) - z) < 0.01) opt.selected = true
           zoomSelect.appendChild(opt)
         })
         zoomSelect.onchange = (e) => {
@@ -164,29 +166,35 @@ function fetchActiveLayoutState() {
       header.appendChild(actions)
       card.appendChild(header)
 
-      if (pane.isEmpty) {
-        const inputGroup = document.createElement('div')
-        inputGroup.className = 'slotInputGroup'
-        
-        const urlInput = document.createElement('input')
-        urlInput.className = 'slotInput'
-        urlInput.placeholder = 'Paste URL to open...'
-        
-        const loadBtn = document.createElement('button')
-        loadBtn.className = 'actionBtn'
-        loadBtn.textContent = 'Load'
-        loadBtn.style.padding = '4px 12px'
-        loadBtn.onclick = () => {
-          if(urlInput.value.trim()) {
-            chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: urlInput.value.trim() })
-            setTimeout(fetchActiveLayoutState, 200)
-          }
-        }
-        
-        inputGroup.appendChild(urlInput)
-        inputGroup.appendChild(loadBtn)
-        card.appendChild(inputGroup)
+      const inputGroup = document.createElement('div')
+      inputGroup.className = 'slotInputGroup'
+      
+      const homeBtn = document.createElement('button')
+      homeBtn.className = 'actionBtn'
+      homeBtn.textContent = '🏠'
+      homeBtn.title = 'Open New Tab Page'
+      homeBtn.onclick = () => {
+        chrome.tabs.create({})
       }
+
+      const urlInput = document.createElement('input')
+      urlInput.className = 'slotInput'
+      urlInput.placeholder = pane.isEmpty ? 'Paste URL to load...' : 'Change URL...'
+      
+      const loadBtn = document.createElement('button')
+      loadBtn.className = 'actionBtn'
+      loadBtn.textContent = 'Load'
+      loadBtn.onclick = () => {
+        if (urlInput.value.trim()) {
+          chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: urlInput.value.trim() })
+          setTimeout(fetchActiveLayoutState, 200)
+        }
+      }
+      
+      inputGroup.appendChild(homeBtn)
+      inputGroup.appendChild(urlInput)
+      inputGroup.appendChild(loadBtn)
+      card.appendChild(inputGroup)
 
       elements.panesContainer.appendChild(card)
     })
@@ -199,7 +207,7 @@ function createActionBtn(icon, command, index, isClose = false) {
   btn.textContent = icon
   btn.onclick = () => {
     chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: command, index: index })
-    if (isClose) setTimeout(fetchActiveLayoutState, 100)
+    if (isClose) setTimeout(fetchActiveLayoutState, 150)
   }
   return btn
 }
