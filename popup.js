@@ -1,44 +1,43 @@
 let availableTabs = []
-let activeGroups = []
 let selectedTabIds = new Set()
+let activeTabId = null
 
 const elements = {
+  createView: document.getElementById('createView'),
+  manageView: document.getElementById('manageView'),
   tabContainer: document.getElementById('tabContainer'),
   createLayoutBtn: document.getElementById('createLayoutBtn'),
-  activeLayoutsSection: document.getElementById('activeLayoutsSection'),
-  activeGroupsContainer: document.getElementById('activeGroupsContainer'),
-  statusBadge: document.getElementById('statusBadge')
+  layoutNameInput: document.getElementById('layoutNameInput'),
+  activeLayoutName: document.getElementById('activeLayoutName'),
+  panesContainer: document.getElementById('panesContainer')
 }
 
 async function initializeApp() {
-  await fetchAvailableTabs()
-  await loadActiveGroups()
-  setupEventListeners()
-  updateCreateButtonState()
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  activeTabId = activeTab.id
+
+  if (activeTab.url && activeTab.url.includes(chrome.runtime.id) && activeTab.url.includes('layout.html')) {
+    elements.manageView.classList.remove('hidden')
+    fetchActiveLayoutState()
+  } else {
+    elements.createView.classList.remove('hidden')
+    fetchAvailableTabs()
+    setupCreateListeners()
+  }
 }
 
 async function fetchAvailableTabs() {
   const tabs = await chrome.tabs.query({ currentWindow: true })
-  availableTabs = tabs.filter(tab => !tab.url.startsWith('chrome-extension://'))
-  renderTabList()
-}
-
-function renderTabList() {
-  elements.tabContainer.innerHTML = ''
+  availableTabs = tabs.filter(tab => !tab.url.startsWith('chrome-extension://') && tab.id !== activeTabId)
   
-  if (availableTabs.length === 0) {
-    elements.tabContainer.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">No tileable tabs found.</p>'
-    return
-  }
-
   availableTabs.forEach(tab => {
     const wrapper = document.createElement('label')
-    wrapper.className = 'flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer transition-colors border border-transparent has-[:checked]:border-sky-500/50 has-[:checked]:bg-slate-700/30'
+    wrapper.className = 'tabWrapper'
     
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
     checkbox.value = tab.id
-    checkbox.className = 'w-4 h-4 rounded border-slate-600 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900 bg-slate-800 cursor-pointer'
+    checkbox.className = 'tabCheckbox'
     
     checkbox.addEventListener('change', (e) => {
       if (e.target.checked) {
@@ -50,11 +49,11 @@ function renderTabList() {
       } else {
         selectedTabIds.delete(tab.id)
       }
-      updateCreateButtonState()
+      updateCreateButton()
     })
 
     const titleSpan = document.createElement('span')
-    titleSpan.className = 'text-sm text-slate-200 truncate flex-1'
+    titleSpan.className = 'tabTitle'
     titleSpan.textContent = tab.title
 
     wrapper.appendChild(checkbox)
@@ -63,222 +62,84 @@ function renderTabList() {
   })
 }
 
-function updateCreateButtonState() {
+function updateCreateButton() {
   const count = selectedTabIds.size
   const isValid = count === 2 || count === 3 || count === 4
   elements.createLayoutBtn.disabled = !isValid
   
-  if (count === 0) {
-    elements.createLayoutBtn.textContent = 'Select 2-4 Tabs'
-  } else if (count === 1) {
-    elements.createLayoutBtn.textContent = 'Select at least 1 more'
-  } else if (count === 3) {
-    elements.createLayoutBtn.textContent = 'Tile 3 Tabs (+1 New Tab)'
-  } else {
-    elements.createLayoutBtn.textContent = `Tile ${count} Tabs`
-  }
+  if (count === 0) elements.createLayoutBtn.textContent = 'Select 2-4 Tabs'
+  else if (count === 1) elements.createLayoutBtn.textContent = 'Select at least 1 more'
+  else if (count === 3) elements.createLayoutBtn.textContent = 'Tile 3 Tabs (+1 Empty)'
+  else elements.createLayoutBtn.textContent = `Tile ${count} Tabs`
 }
 
-async function loadActiveGroups() {
-  const result = await chrome.storage.local.get('stardanceGroups')
-  activeGroups = result.stardanceGroups || []
-  renderActiveGroups()
-}
+function setupCreateListeners() {
+  elements.createLayoutBtn.addEventListener('click', async () => {
+    elements.createLayoutBtn.disabled = true
+    let tabsToProcess = Array.from(selectedTabIds)
+    let urlsToLoad = []
 
-async function saveActiveGroups() {
-  await chrome.storage.local.set({ stardanceGroups: activeGroups })
-}
+    for (let id of tabsToProcess) {
+      const tabInfo = await chrome.tabs.get(id)
+      urlsToLoad.push(tabInfo.url)
+    }
 
-function renderActiveGroups() {
-  elements.activeGroupsContainer.innerHTML = ''
-  
-  if (activeGroups.length === 0) {
-    elements.activeLayoutsSection.classList.add('hidden')
-    return
-  }
-  
-  elements.activeLayoutsSection.classList.remove('hidden')
+    if (urlsToLoad.length === 3) urlsToLoad.push('')
 
-  activeGroups.forEach((group, index) => {
-    const groupCard = document.createElement('div')
-    groupCard.className = 'bg-slate-900/50 p-3 rounded-lg border border-slate-700/30'
+    const customName = elements.layoutNameInput.value.trim()
+    const layoutName = customName || (urlsToLoad.length > 2 ? 'Quad Tile' : 'Duo Tile')
+    const layoutId = Date.now().toString()
 
-    const header = document.createElement('div')
-    header.className = 'flex justify-between items-center mb-3'
-    
-    const title = document.createElement('span')
-    title.className = 'text-xs font-medium text-sky-400'
-    title.textContent = `Layout ${index + 1} (${group.type})`
-    
-    const focusBtn = document.createElement('button')
-    focusBtn.className = 'text-[10px] uppercase tracking-wider bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded transition-colors'
-    focusBtn.textContent = 'Focus'
-    focusBtn.onclick = () => focusGroup(group.windowIds)
-
-    header.appendChild(title)
-    header.appendChild(focusBtn)
-    groupCard.appendChild(header)
-
-    const globalZoomWrapper = document.createElement('div')
-    globalZoomWrapper.className = 'mb-3 pb-3 border-b border-slate-700/50'
-    globalZoomWrapper.appendChild(createZoomSlider('Group Zoom', 1, (val) => updateGroupZoom(group, val)))
-    groupCard.appendChild(globalZoomWrapper)
-
-    group.tabs.forEach((tab) => {
-      const tabZoomWrapper = document.createElement('div')
-      tabZoomWrapper.className = 'mt-2'
-      tabZoomWrapper.appendChild(createZoomSlider(tab.title, 1, (val) => updateTabZoom(tab.id, val), true))
-      groupCard.appendChild(tabZoomWrapper)
+    await chrome.storage.local.set({ 
+      [`layout_${layoutId}`]: { name: layoutName, urls: urlsToLoad } 
     })
 
-    elements.activeGroupsContainer.appendChild(groupCard)
+    await chrome.tabs.remove(tabsToProcess)
+    chrome.tabs.create({ url: `layout.html?id=${layoutId}` })
   })
 }
 
-function createZoomSlider(label, initialValue, onChange, isSub = false) {
-  const container = document.createElement('div')
-  
-  const header = document.createElement('div')
-  header.className = 'flex justify-between items-center mb-1'
-  
-  const labelSpan = document.createElement('span')
-  labelSpan.className = `truncate ${isSub ? 'text-[10px] text-slate-400 max-w-[200px]' : 'text-xs text-slate-300'}`
-  labelSpan.textContent = label
-  
-  const valueSpan = document.createElement('span')
-  valueSpan.className = 'text-[10px] text-sky-400 font-mono'
-  valueSpan.textContent = `${Math.round(initialValue * 100)}%`
-
-  const input = document.createElement('input')
-  input.type = 'range'
-  input.min = '0.25'
-  input.max = '2.0'
-  input.step = '0.05'
-  input.value = initialValue
-  input.className = 'customRange'
-  
-  input.addEventListener('input', (e) => {
-    const val = parseFloat(e.target.value)
-    valueSpan.textContent = `${Math.round(val * 100)}%`
-    onChange(val)
-  })
-
-  header.appendChild(labelSpan)
-  header.appendChild(valueSpan)
-  container.appendChild(header)
-  container.appendChild(input)
-  
-  return container
-}
-
-async function updateGroupZoom(group, zoomValue) {
-  for (const tab of group.tabs) {
-    await updateTabZoom(tab.id, zoomValue)
-  }
-}
-
-async function updateTabZoom(tabId, zoomValue) {
-  try {
-    await chrome.tabs.setZoom(tabId, zoomValue)
-  } catch (e) {
-    console.error(e)
-  }
-}
-
-async function focusGroup(windowIds) {
-  for (const winId of windowIds) {
-    try {
-      await chrome.windows.update(winId, { focused: true })
-    } catch (e) {
-      console.error(e)
-    }
-  }
-}
-
-async function createLayout() {
-  elements.createLayoutBtn.disabled = true
-  elements.statusBadge.textContent = 'Building...'
-  
-  let tabsToProcess = Array.from(selectedTabIds)
-  
-  if (tabsToProcess.length === 3) {
-    const newTab = await chrome.tabs.create({ url: 'chrome://newtab', active: false })
-    tabsToProcess.push(newTab.id)
-  }
-
-  const screenW = window.screen.availWidth
-  const screenH = window.screen.availHeight
-  const halfW = Math.floor(screenW / 2)
-  const halfH = Math.floor(screenH / 2)
-  
-  let coordinates = []
-  const layoutType = tabsToProcess.length === 2 ? 'Duo' : 'Quad'
-
-  if (layoutType === 'Duo') {
-    coordinates = [
-      { left: 0, top: 0, width: halfW, height: screenH },
-      { left: halfW, top: 0, width: halfW, height: screenH }
-    ]
-  } else {
-    coordinates = [
-      { left: 0, top: 0, width: halfW, height: halfH },
-      { left: halfW, top: 0, width: halfW, height: halfH },
-      { left: 0, top: halfH, width: halfW, height: halfH },
-      { left: halfW, top: halfH, width: halfW, height: halfH }
-    ]
-  }
-
-  const groupData = {
-    id: Date.now().toString(),
-    type: layoutType,
-    windowIds: [],
-    tabs: []
-  }
-
-  for (let i = 0; i < tabsToProcess.length; i++) {
-    const tabId = tabsToProcess[i]
-    const pos = coordinates[i]
+function fetchActiveLayoutState() {
+  chrome.tabs.sendMessage(activeTabId, { action: 'get_state' }, (response) => {
+    if (chrome.runtime.lastError || !response) return
     
-    try {
-      const tabInfo = await chrome.tabs.get(tabId)
-      const newWin = await chrome.windows.create({
-        tabId: tabId,
-        type: 'popup',
-        left: pos.left,
-        top: pos.top,
-        width: pos.width,
-        height: pos.height
-      })
-      
-      groupData.windowIds.push(newWin.id)
-      groupData.tabs.push({
-        id: tabId,
-        title: tabInfo.title || 'New Tab'
-      })
-    } catch (e) {
-      console.error(e)
-    }
-  }
+    elements.activeLayoutName.textContent = response.name
+    elements.panesContainer.innerHTML = ''
 
-  activeGroups.push(groupData)
-  await saveActiveGroups()
-  
-  selectedTabIds.clear()
-  await fetchAvailableTabs()
-  renderActiveGroups()
-  
-  elements.statusBadge.textContent = 'Ready'
-  updateCreateButtonState()
+    response.panes.forEach((pane) => {
+      const card = document.createElement('div')
+      card.className = 'paneControlCard'
+      
+      const title = document.createElement('span')
+      title.className = 'paneName'
+      title.textContent = pane.isEmpty ? `Slot ${pane.index + 1} (Empty)` : `Slot ${pane.index + 1}`
+      
+      const actions = document.createElement('div')
+      actions.className = 'paneActions'
+      
+      if (!pane.isEmpty) {
+        actions.appendChild(createActionBtn('⬅', 'back', pane.index))
+        actions.appendChild(createActionBtn('➡', 'forward', pane.index))
+        actions.appendChild(createActionBtn('↻', 'refresh', pane.index))
+        actions.appendChild(createActionBtn('✕', 'close', pane.index, true))
+      }
+
+      card.appendChild(title)
+      card.appendChild(actions)
+      elements.panesContainer.appendChild(card)
+    })
+  })
 }
 
-function setupEventListeners() {
-  elements.createLayoutBtn.addEventListener('click', createLayout)
-  
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'CLEANUP_GROUPS') {
-      loadActiveGroups()
-    }
-  })
+function createActionBtn(icon, command, index, isClose = false) {
+  const btn = document.createElement('button')
+  btn.className = isClose ? 'actionBtn closeBtn' : 'actionBtn'
+  btn.textContent = icon
+  btn.onclick = () => {
+    chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: command, index: index })
+    if (isClose) setTimeout(fetchActiveLayoutState, 100)
+  }
+  return btn
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp)

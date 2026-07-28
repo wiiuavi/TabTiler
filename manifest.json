@@ -1,16 +1,32 @@
 {
   "manifest_version": 3,
   "name": "TabTiler",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "permissions": [
     "tabs",
-    "windows",
-    "storage"
+    "storage",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html"
   },
-  "background": {
-    "service_worker": "background.js"
-  }
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "iframe_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "js": ["content.js"]
+    }
+  ]
 }

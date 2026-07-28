@@ -2,69 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body {
-      width: 400px;
-      max-height: 600px;
+      width: 350px;
       background-color: #0f172a;
       color: #f8fafc;
       font-family: ui-sans-serif, system-ui, sans-serif;
+      padding: 16px;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .title {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #38bdf8;
+      margin: 0;
+    }
+    .sectionTitle {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      color: #cbd5e1;
+    }
+    .hidden { display: none !important; }
+    
+    /* Create View Styles */
+    .inputField {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.875rem;
+    }
+    .tabContainer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
       overflow-y: auto;
-      overflow-x: hidden;
+      margin-bottom: 16px;
     }
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0f172a;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 3px;
-    }
-    .customRange {
-      -webkit-appearance: none;
-      width: 100%;
-      background: transparent;
-    }
-    .customRange::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      height: 14px;
-      width: 14px;
-      border-radius: 50%;
-      background: #38bdf8;
+    .tabWrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 8px;
       cursor: pointer;
-      margin-top: -5px;
     }
-    .customRange::-webkit-slider-runnable-track {
+    .tabWrapper:hover { background-color: #1e293b; }
+    .tabCheckbox { accent-color: #0ea5e9; }
+    .tabTitle { font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    .primaryBtn {
       width: 100%;
-      height: 4px;
+      background-color: #0ea5e9;
+      color: #020617;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
       cursor: pointer;
-      background: #334155;
-      border-radius: 2px;
     }
+    .primaryBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Manage View Styles */
+    .paneControlCard {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .paneName { font-size: 0.875rem; font-weight: 500; }
+    .paneActions { display: flex; gap: 4px; }
+    .actionBtn {
+      background: #334155;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      padding: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+    }
+    .actionBtn:hover { background: #475569; }
+    .actionBtn.closeBtn { color: #f87171; }
+    .actionBtn.closeBtn:hover { background: #7f1d1d; color: white; }
   </style>
 </head>
-<body class="p-4">
-  <div class="flex items-center justify-between mb-6">
-    <h1 class="text-xl font-bold tracking-tight text-sky-400">Stardance</h1>
-    <span class="text-xs font-medium px-2 py-1 bg-slate-800 rounded-md text-slate-400" id="statusBadge">Ready</span>
+<body>
+  <div class="header">
+    <h1 class="title">TabTiler</h1>
   </div>
 
-  <div class="space-y-4">
-    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-      <h2 class="text-sm font-semibold mb-3 text-slate-300">Create Layout</h2>
-      <div id="tabContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1 mb-4"></div>
-      <button id="createLayoutBtn" class="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-        Tile Selected Tabs
-      </button>
-    </div>
+  <div id="createView" class="hidden">
+    <h2 class="sectionTitle">New Layout</h2>
+    <input type="text" id="layoutNameInput" class="inputField" placeholder="Name (e.g., Minecraft Split)">
+    <div id="tabContainer" class="tabContainer"></div>
+    <button id="createLayoutBtn" class="primaryBtn">Select 2-4 Tabs</button>
+  </div>
 
-    <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hidden" id="activeLayoutsSection">
-      <h2 class="text-sm font-semibold mb-3 text-slate-300">Active Layouts</h2>
-      <div id="activeGroupsContainer" class="space-y-4"></div>
-    </div>
+  <div id="manageView" class="hidden">
+    <h2 class="sectionTitle" id="activeLayoutName">Active Layout</h2>
+    <div id="panesContainer"></div>
   </div>
 
   <script src="popup.js"></script>
