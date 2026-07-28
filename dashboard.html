@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TabTiler Dashboard</title>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+    h1 { color: #38bdf8; font-size: 2rem; margin-bottom: 8px; }
+    h2 { font-size: 1.25rem; margin-top: 32px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .warning {
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      margin-bottom: 12px;
+    }
+    .layout-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #334155;
+    }
+    .layout-item:last-child { border-bottom: none; }
+    .empty-state { color: #94a3b8; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TabTiler Dashboard</h1>
+    <p>Manage your active layouts and view extension limitations.</p>
+
+    <h2>Active Saved Layouts</h2>
+    <div class="card" id="layoutsContainer">
+      <div class="empty-state">Loading layouts...</div>
+    </div>
+
+    <h2>Important Notes & Limitations</h2>
+    <div class="card">
+      <div class="warning">
+        <strong>⚠️ Tab Reloading:</strong> When you convert a standard tab into a tiled pane, the webpage must reload. Any unsaved data (like filled forms or playing videos) will be reset.
+      </div>
+      <div class="warning">
+        <strong>⚠️ Cross-Origin Dragging:</strong> Due to Chromium security restrictions, you cannot drag and drop images or selected text from one pane into another if they are different websites.
+      </div>
+      <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5;">
+        <strong>How to use Extract:</strong> If you need more space for a specific pane, use the ⏏ (Extract) button in the popup menu. This pulls the tab out of the grid and opens it as a standard Chrome tab, leaving the grid slot empty for a new URL.
+      </p>
+    </div>
+  </div>
+  <script src="dashboard.js"></script>
+</body>
+</html>

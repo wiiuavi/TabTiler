@@ -24,6 +24,16 @@
       color: #38bdf8;
       margin: 0;
     }
+    .dashBtn {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    .dashBtn:hover { background: #334155; color: white; }
     .sectionTitle {
       font-size: 0.875rem;
       font-weight: 600;
@@ -103,15 +113,51 @@
     .actionBtn:hover { background: #475569; }
     .actionBtn.closeBtn { color: #f87171; }
     .actionBtn.closeBtn:hover { background: #7f1d1d; color: white; }
+    
+    .warningText {
+      font-size: 0.75rem;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+    .slotInputGroup {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      width: 100%;
+    }
+    .slotInput {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+    .zoomSelect {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: white;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1 class="title">TabTiler</h1>
+    <button id="openDashBtn" class="dashBtn">Dashboard</button>
   </div>
 
   <div id="createView" class="hidden">
     <h2 class="sectionTitle">New Layout</h2>
+    <div class="warningText">⚠️ Tiling reloads tabs. Unsaved data will be lost!</div>
     <input type="text" id="layoutNameInput" class="inputField" placeholder="Name (e.g., Minecraft Split)">
     <div id="tabContainer" class="tabContainer"></div>
     <button id="createLayoutBtn" class="primaryBtn">Select 2-4 Tabs</button>

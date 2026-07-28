@@ -29,7 +29,8 @@ chrome.storage.local.get([`layout_${layoutId}`], (result) => {
     panesState.push({ 
       index: index, 
       originalUrl: url,
-      isEmpty: !url
+      isEmpty: !url,
+      zoom: 1
     })
   })
 })
@@ -43,6 +44,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.command === 'close') {
         iframe.src = chrome.runtime.getURL('empty.html')
         panesState[request.index].isEmpty = true
+        panesState[request.index].originalUrl = ''
+      } else if (request.command === 'extract') {
+        window.open(panesState[request.index].originalUrl || iframe.src, '_blank')
+        iframe.src = chrome.runtime.getURL('empty.html')
+        panesState[request.index].isEmpty = true
+        panesState[request.index].originalUrl = ''
+      } else if (request.command === 'load') {
+        let targetUrl = request.url
+        if (!targetUrl.startsWith('http') && !targetUrl.startsWith('chrome')) {
+          targetUrl = 'https://' + targetUrl
+        }
+        iframe.src = targetUrl
+        panesState[request.index].isEmpty = false
+        panesState[request.index].originalUrl = targetUrl
+      } else if (request.command === 'zoom') {
+        iframe.style.zoom = request.value
+        panesState[request.index].zoom = request.value
       } else {
         iframe.contentWindow.postMessage({ action: `tabtiler_${request.command}` }, '*')
       }

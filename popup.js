@@ -9,7 +9,8 @@ const elements = {
   createLayoutBtn: document.getElementById('createLayoutBtn'),
   layoutNameInput: document.getElementById('layoutNameInput'),
   activeLayoutName: document.getElementById('activeLayoutName'),
-  panesContainer: document.getElementById('panesContainer')
+  panesContainer: document.getElementById('panesContainer'),
+  openDashBtn: document.getElementById('openDashBtn')
 }
 
 async function initializeApp() {
@@ -28,7 +29,7 @@ async function initializeApp() {
 
 async function fetchAvailableTabs() {
   const tabs = await chrome.tabs.query({ currentWindow: true })
-  availableTabs = tabs.filter(tab => !tab.url.startsWith('chrome-extension://') && tab.id !== activeTabId)
+  availableTabs = tabs.filter(tab => !tab.url.startsWith('chrome-extension://'))
   
   availableTabs.forEach(tab => {
     const wrapper = document.createElement('label')
@@ -74,6 +75,10 @@ function updateCreateButton() {
 }
 
 function setupCreateListeners() {
+  elements.openDashBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'dashboard.html' })
+  })
+
   elements.createLayoutBtn.addEventListener('click', async () => {
     elements.createLayoutBtn.disabled = true
     let tabsToProcess = Array.from(selectedTabIds)
@@ -109,10 +114,41 @@ function fetchActiveLayoutState() {
     response.panes.forEach((pane) => {
       const card = document.createElement('div')
       card.className = 'paneControlCard'
+      card.style.flexDirection = 'column'
+      card.style.alignItems = 'stretch'
+      
+      const header = document.createElement('div')
+      header.style.display = 'flex'
+      header.style.justifyContent = 'space-between'
+      header.style.alignItems = 'center'
+
+      const titleGroup = document.createElement('div')
+      titleGroup.style.display = 'flex'
+      titleGroup.style.alignItems = 'center'
       
       const title = document.createElement('span')
       title.className = 'paneName'
       title.textContent = pane.isEmpty ? `Slot ${pane.index + 1} (Empty)` : `Slot ${pane.index + 1}`
+      titleGroup.appendChild(title)
+
+      if (!pane.isEmpty) {
+        const zoomSelect = document.createElement('select')
+        zoomSelect.className = 'zoomSelect'
+        const zooms = [0.25, 0.5, 0.75, 1, 1.25, 1.5]
+        zooms.forEach(z => {
+          const opt = document.createElement('option')
+          opt.value = z
+          opt.textContent = `${z * 100}%`
+          if ((pane.zoom || 1) == z) opt.selected = true
+          zoomSelect.appendChild(opt)
+        })
+        zoomSelect.onchange = (e) => {
+          chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'zoom', index: pane.index, value: parseFloat(e.target.value) })
+        }
+        titleGroup.appendChild(zoomSelect)
+      }
+
+      header.appendChild(titleGroup)
       
       const actions = document.createElement('div')
       actions.className = 'paneActions'
@@ -121,11 +157,37 @@ function fetchActiveLayoutState() {
         actions.appendChild(createActionBtn('⬅', 'back', pane.index))
         actions.appendChild(createActionBtn('➡', 'forward', pane.index))
         actions.appendChild(createActionBtn('↻', 'refresh', pane.index))
+        actions.appendChild(createActionBtn('⏏', 'extract', pane.index))
         actions.appendChild(createActionBtn('✕', 'close', pane.index, true))
       }
 
-      card.appendChild(title)
-      card.appendChild(actions)
+      header.appendChild(actions)
+      card.appendChild(header)
+
+      if (pane.isEmpty) {
+        const inputGroup = document.createElement('div')
+        inputGroup.className = 'slotInputGroup'
+        
+        const urlInput = document.createElement('input')
+        urlInput.className = 'slotInput'
+        urlInput.placeholder = 'Paste URL to open...'
+        
+        const loadBtn = document.createElement('button')
+        loadBtn.className = 'actionBtn'
+        loadBtn.textContent = 'Load'
+        loadBtn.style.padding = '4px 12px'
+        loadBtn.onclick = () => {
+          if(urlInput.value.trim()) {
+            chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: urlInput.value.trim() })
+            setTimeout(fetchActiveLayoutState, 200)
+          }
+        }
+        
+        inputGroup.appendChild(urlInput)
+        inputGroup.appendChild(loadBtn)
+        card.appendChild(inputGroup)
+      }
+
       elements.panesContainer.appendChild(card)
     })
   })
