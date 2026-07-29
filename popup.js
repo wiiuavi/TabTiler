@@ -105,8 +105,14 @@ function setupCreateListeners() {
       [`layout_${layoutId}`]: { name: layoutName, urls: urlsToLoad } 
     })
 
+    const settings = await chrome.storage.local.get(['closeOriginalTabs'])
+    const shouldClose = settings.closeOriginalTabs !== false
+
     await chrome.tabs.create({ url: `layout.html?id=${layoutId}` })
-    await chrome.tabs.remove(tabsToProcess)
+    
+    if (shouldClose) {
+      await chrome.tabs.remove(tabsToProcess)
+    }
   })
 }
 

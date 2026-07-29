@@ -1,12 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('keep100ZoomToggle');
+  const keep100Toggle = document.getElementById('keep100ZoomToggle');
+  const hideScrollbarsToggle = document.getElementById('hideScrollbarsToggle');
   
-  chrome.storage.local.get(['keep100Zoom'], (result) => {
-    toggle.checked = result.keep100Zoom || false;
+  chrome.storage.local.get(['keep100Zoom', 'hideScrollbars'], (result) => {
+    keep100Toggle.checked = result.keep100Zoom || false;
+    hideScrollbarsToggle.checked = result.hideScrollbars || false;
   });
 
-  toggle.addEventListener('change', (e) => {
+  keep100Toggle.addEventListener('change', (e) => {
     chrome.storage.local.set({ keep100Zoom: e.target.checked });
+  });
+
+  hideScrollbarsToggle.addEventListener('change', (e) => {
+    chrome.storage.local.set({ hideScrollbars: e.target.checked });
   });
 
   function renderLayouts() {

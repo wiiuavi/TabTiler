@@ -60,6 +60,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 8px 0;
+    }
+    .toggleRow:not(:last-child) {
+      border-bottom: 1px solid #334155;
     }
     .switch {
       position: relative;
@@ -96,6 +100,17 @@
 
     <h2>Settings</h2>
     <div class="card">
+      <div class="toggleRow">
+        <div>
+          <strong style="color:#f8fafc;">Hide Scrollbars</strong>
+          <p style="color:#94a3b8; font-size:0.85rem; margin:4px 0 0 0;">Hides visible scrollbars across all tiled panes for a borderless split view.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="hideScrollbarsToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
       <div class="toggleRow">
         <div>
           <strong style="color:#f8fafc;">Keep 100% Zoom</strong>

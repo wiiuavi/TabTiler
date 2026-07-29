@@ -3,11 +3,12 @@ const layoutId = urlParams.get('id')
 let layoutName = "TabTiler"
 let panesState = []
 
-chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom'], (result) => {
+chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars'], (result) => {
   const data = result[`layout_${layoutId}`]
   if (!data) return
   
   const keep100 = result.keep100Zoom || false
+  const hideScrollbars = result.hideScrollbars || false
   layoutName = data.name
   document.title = layoutName
   const grid = document.getElementById('grid')
@@ -15,6 +16,15 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom'], (result) => {
   const isDuo = data.urls.length <= 2
   grid.className = isDuo ? 'duo' : 'quad'
   const defaultZoom = keep100 ? 1.0 : (isDuo ? 0.5 : 0.25)
+
+  if (hideScrollbars) {
+    const styleTag = document.createElement('style')
+    styleTag.textContent = `
+      iframe::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+      iframe { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+    `
+    document.head.appendChild(styleTag)
+  }
 
   data.urls.forEach((url, index) => {
     const container = document.createElement('div')
