@@ -8,7 +8,7 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
   if (!data) return
   
   const keep100 = result.keep100Zoom || false
-  const hideScrollbars = result.hideScrollbars || false
+  const hideScrollbars = result.hideScrollbars !== false
   layoutName = data.name
   document.title = layoutName
   const grid = document.getElementById('grid')
@@ -20,8 +20,21 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
   if (hideScrollbars) {
     const styleTag = document.createElement('style')
     styleTag.textContent = `
-      iframe::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-      iframe { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+      body, html, #grid, .paneContainer {
+        overflow: hidden !important;
+      }
+      iframe {
+        overflow: hidden !important;
+      }
+      ::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+      * {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
+      }
     `
     document.head.appendChild(styleTag)
   }
@@ -35,6 +48,7 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
     iframe.src = url || chrome.runtime.getURL('empty.html')
     iframe.id = `iframe-${index}`
     iframe.sandbox = "allow-scripts allow-forms allow-same-origin allow-popups allow-downloads"
+    iframe.scrolling = hideScrollbars ? "no" : "auto"
     
     const initialZoom = data.zooms && data.zooms[index] !== undefined ? data.zooms[index] : defaultZoom
     iframe.style.zoom = initialZoom
@@ -42,11 +56,14 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
     container.appendChild(iframe)
     grid.appendChild(container)
     
+    const initialTitle = data.titles && data.titles[index] ? data.titles[index] : (url ? url : 'Empty Slot')
+
     panesState.push({ 
       index: index, 
       originalUrl: url,
       isEmpty: !url,
-      zoom: initialZoom
+      zoom: initialZoom,
+      title: initialTitle
     })
   })
 })
@@ -61,6 +78,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         iframe.src = chrome.runtime.getURL('empty.html')
         panesState[request.index].isEmpty = true
         panesState[request.index].originalUrl = ''
+        panesState[request.index].title = 'Empty Slot'
       } else if (request.command === 'extract') {
         const targetUrl = panesState[request.index].originalUrl || iframe.src
         if (targetUrl && !targetUrl.includes('empty.html')) {
@@ -69,6 +87,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         iframe.src = chrome.runtime.getURL('empty.html')
         panesState[request.index].isEmpty = true
         panesState[request.index].originalUrl = ''
+        panesState[request.index].title = 'Empty Slot'
       } else if (request.command === 'load') {
         let targetUrl = request.url
         if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://') && !targetUrl.startsWith('chrome://')) {
@@ -77,6 +96,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         iframe.src = targetUrl
         panesState[request.index].isEmpty = false
         panesState[request.index].originalUrl = targetUrl
+        panesState[request.index].title = request.title || targetUrl
       } else if (request.command === 'refresh') {
         iframe.src = iframe.src
       } else if (request.command === 'zoom') {

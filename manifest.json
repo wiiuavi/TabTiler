@@ -1,7 +1,12 @@
 {
   "manifest_version": 3,
   "name": "TabTiler",
-  "version": "2.1.0",
+  "version": "2.1.1",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
   "permissions": [
     "tabs",
     "storage",
@@ -11,7 +16,8 @@
     "<all_urls>"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
   },
   "declarative_net_request": {
     "rule_resources": [

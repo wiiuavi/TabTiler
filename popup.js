@@ -14,6 +14,10 @@ const elements = {
 }
 
 async function initializeApp() {
+  elements.openDashBtn.addEventListener('click', () => {
+    chrome.tabs.create({ url: 'dashboard.html' })
+  })
+
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
   activeTabId = activeTab ? activeTab.id : null
 
@@ -81,28 +85,29 @@ function updateCreateButton() {
 }
 
 function setupCreateListeners() {
-  elements.openDashBtn.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'dashboard.html' })
-  })
-
   elements.createLayoutBtn.addEventListener('click', async () => {
     elements.createLayoutBtn.disabled = true
     let tabsToProcess = Array.from(selectedTabIds)
     let urlsToLoad = []
+    let titlesToLoad = []
 
     for (let id of tabsToProcess) {
       const tabInfo = await chrome.tabs.get(id)
       urlsToLoad.push(tabInfo.url)
+      titlesToLoad.push(tabInfo.title)
     }
 
-    if (urlsToLoad.length === 3) urlsToLoad.push('')
+    if (urlsToLoad.length === 3) {
+      urlsToLoad.push('')
+      titlesToLoad.push('Empty Slot')
+    }
 
     const customName = elements.layoutNameInput.value.trim()
     const layoutName = customName || (urlsToLoad.length > 2 ? 'Quad Tile' : 'Duo Tile')
     const layoutId = Date.now().toString()
 
     await chrome.storage.local.set({ 
-      [`layout_${layoutId}`]: { name: layoutName, urls: urlsToLoad } 
+      [`layout_${layoutId}`]: { name: layoutName, urls: urlsToLoad, titles: titlesToLoad } 
     })
 
     const settings = await chrome.storage.local.get(['closeOriginalTabs'])
@@ -136,7 +141,11 @@ function fetchActiveLayoutState() {
       
       const title = document.createElement('span')
       title.className = 'paneName'
-      title.textContent = pane.isEmpty ? `Slot ${pane.index + 1} (Empty)` : `Slot ${pane.index + 1}`
+      title.style.whiteSpace = 'nowrap'
+      title.style.overflow = 'hidden'
+      title.style.textOverflow = 'ellipsis'
+      title.style.maxWidth = '130px'
+      title.textContent = pane.title || 'Empty Slot'
       titleGroup.appendChild(title)
 
       if (!pane.isEmpty) {
@@ -175,29 +184,38 @@ function fetchActiveLayoutState() {
       const inputGroup = document.createElement('div')
       inputGroup.className = 'slotInputGroup'
       
-      const homeBtn = document.createElement('button')
-      homeBtn.className = 'actionBtn'
-      homeBtn.textContent = '🏠'
-      homeBtn.title = 'Open New Tab Page'
-      homeBtn.onclick = () => {
-        chrome.tabs.create({})
+      const searchBtn = document.createElement('button')
+      searchBtn.className = 'actionBtn'
+      searchBtn.textContent = '🔍'
+      searchBtn.title = 'Google Search'
+      searchBtn.onclick = () => {
+        const query = urlInput.value.trim()
+        if (query) {
+          const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(query)
+          chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: searchUrl, title: query })
+          setTimeout(fetchActiveLayoutState, 200)
+        }
       }
 
       const urlInput = document.createElement('input')
       urlInput.className = 'slotInput'
-      urlInput.placeholder = pane.isEmpty ? 'Paste URL to load...' : 'Change URL...'
+      urlInput.placeholder = pane.isEmpty ? 'Search Google or paste URL...' : 'Search Google or paste URL...'
+      urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchBtn.click()
+      })
       
       const loadBtn = document.createElement('button')
       loadBtn.className = 'actionBtn'
       loadBtn.textContent = 'Load'
+      loadBtn.title = 'Load as Website URL'
       loadBtn.onclick = () => {
         if (urlInput.value.trim()) {
-          chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: urlInput.value.trim() })
+          chrome.tabs.sendMessage(activeTabId, { action: 'pane_command', command: 'load', index: pane.index, url: urlInput.value.trim(), title: urlInput.value.trim() })
           setTimeout(fetchActiveLayoutState, 200)
         }
       }
       
-      inputGroup.appendChild(homeBtn)
+      inputGroup.appendChild(searchBtn)
       inputGroup.appendChild(urlInput)
       inputGroup.appendChild(loadBtn)
       card.appendChild(inputGroup)
