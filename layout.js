@@ -19,13 +19,9 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
 
   if (hideScrollbars) {
     const styleTag = document.createElement('style')
+    // We only hide the visual scrollbars here, we DO NOT use overflow: hidden 
+    // so that the mouse wheel and trackpad still work perfectly.
     styleTag.textContent = `
-      body, html, #grid, .paneContainer {
-        overflow: hidden !important;
-      }
-      iframe {
-        overflow: hidden !important;
-      }
       ::-webkit-scrollbar {
         display: none !important;
         width: 0 !important;
@@ -48,7 +44,6 @@ chrome.storage.local.get([`layout_${layoutId}`, 'keep100Zoom', 'hideScrollbars']
     iframe.src = url || chrome.runtime.getURL('empty.html')
     iframe.id = `iframe-${index}`
     iframe.sandbox = "allow-scripts allow-forms allow-same-origin allow-popups allow-downloads"
-    iframe.scrolling = hideScrollbars ? "no" : "auto"
     
     const initialZoom = data.zooms && data.zooms[index] !== undefined ? data.zooms[index] : defaultZoom
     iframe.style.zoom = initialZoom
