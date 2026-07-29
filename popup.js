@@ -134,23 +134,30 @@ function fetchActiveLayoutState() {
       
       const header = document.createElement('div')
       header.className = 'paneHeader'
+      header.style.gap = '8px'
 
       const titleGroup = document.createElement('div')
       titleGroup.style.display = 'flex'
       titleGroup.style.alignItems = 'center'
+      titleGroup.style.flex = '1'
+      titleGroup.style.minWidth = '0'
+      titleGroup.style.gap = '6px'
       
       const title = document.createElement('span')
       title.className = 'paneName'
       title.style.whiteSpace = 'nowrap'
       title.style.overflow = 'hidden'
       title.style.textOverflow = 'ellipsis'
-      title.style.maxWidth = '130px'
+      title.style.display = 'block'
       title.textContent = pane.title || 'Empty Slot'
       titleGroup.appendChild(title)
 
       if (!pane.isEmpty) {
         const zoomSelect = document.createElement('select')
         zoomSelect.className = 'zoomSelect'
+        zoomSelect.style.marginLeft = '0'
+        zoomSelect.style.flexShrink = '0'
+        
         const zooms = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
         zooms.forEach(z => {
           const opt = document.createElement('option')
@@ -169,6 +176,7 @@ function fetchActiveLayoutState() {
       
       const actions = document.createElement('div')
       actions.className = 'paneActions'
+      actions.style.flexShrink = '0'
       
       if (!pane.isEmpty) {
         actions.appendChild(createActionBtn('⬅', 'back', pane.index))
