@@ -24,7 +24,7 @@ The text box can either take a URL which you can load by pressing "load" (duh) o
 Clicking the dashboard will take you to the dashboard (cool right?) where you can read any comments ive left and change settings. Currently, there are 3 settings.    
   using Hide scrollbars is self explanatory
   using autozoom will set the zoom to 50% or 25% by default (depends on if you are on a duo or quad tile)
-  using close original tabs is self explanatory (adjust this if one of the tabs is uploading or smthng and u dont want to close/reload it).     
+  ~~using close original tabs is self explanatory (adjust this if one of the tabs is uploading or smthng and u dont want to close/reload it).~~ _bugged, will try fix_     
 You can also reload previously saved layouts! (incase you made a daily review layout with ur teams outlook company portal and slack idk)
 
 
