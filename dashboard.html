@@ -60,7 +60,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 0;
+      padding: 12px 0;
     }
     .toggleRow:not(:last-child) {
       border-bottom: 1px solid #334155;
@@ -103,10 +103,21 @@
       <div class="toggleRow">
         <div>
           <strong style="color:#f8fafc;">Hide Scrollbars</strong>
-          <p style="color:#94a3b8; font-size:0.85rem; margin:4px 0 0 0;">Hides visible scrollbars across all tiled panes for a borderless split view.</p>
+          <p style="color:#94a3b8; font-size:0.85rem; margin:4px 0 0 0;">Hides visible scrollbars across all tiled panes for a clean, borderless split view.</p>
         </div>
         <label class="switch">
           <input type="checkbox" id="hideScrollbarsToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggleRow">
+        <div>
+          <strong style="color:#f8fafc;">Close Original Tabs on Tiling</strong>
+          <p style="color:#94a3b8; font-size:0.85rem; margin:4px 0 0 0;">Automatically close the selected standalone tabs when creating a layout.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="closeOriginalTabsToggle">
           <span class="slider"></span>
         </label>
       </div>
